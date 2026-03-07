@@ -202,7 +202,7 @@ async function checkMembership() {
   const first = document.getElementById('firstInput').value.trim();
   const last  = document.getElementById('lastInput').value.trim();
 
-  if (!email && !first && !last) { alert('Please enter your email address or name.'); return; }
+  if (!email && !last) { alert('Please enter your email address or at least a last name.'); return; }
 
   const btn = document.getElementById('checkBtn');
   btn.disabled = true;
@@ -258,6 +258,12 @@ function showResult(data) {
 
   const name = data.displayName || 'Member';
 
+  // ── Last-name-only confirmation banner ───────────────────────
+  const confirmBanner = data.lastNameOnly ? `
+    <div style="margin: 14px 0 4px; background: #FFF3DC; border: 1.5px solid #E8C87A; border-radius: 10px; padding: 12px 16px; font-size: 0.93rem; color: #5C2D00; line-height: 1.5;">
+      <strong>⚠️ Please confirm:</strong> This membership is registered under <strong>${data.firstName}</strong>. If that is not you, please see the registration desk.
+    </div>` : '';
+
   // ── Active ───────────────────────────────────────────────────
   if (data.status === 'active') {
 
@@ -277,7 +283,7 @@ function showResult(data) {
           <div class="result-name">✦ ${name}</div>
           <p class="result-msg">You are an <strong>active Raga Club member</strong>.<br>
           <em>Please show this screen at the desk and proceed to the auditorium.</em></p>
-
+          ${confirmBanner}
           <div class="patron-banner">
             <div class="patron-title">🌟 Patron of Raga Club of Connecticut</div>
             <p>Your extraordinary generosity and steadfast support make our mission possible. On behalf of every artist who has graced our stage and every soul moved by the music, we are deeply grateful — <em>thank you for being a Patron of Raga Club.</em></p>
@@ -305,6 +311,7 @@ function showResult(data) {
         <div class="result-name">✦ ${name}</div>
         <p class="result-msg">You are an <strong>active Raga Club member</strong>.<br>Thank you for your support!<br><br>
         <em>Please show this screen at the desk and proceed to the auditorium.</em></p>
+        ${confirmBanner}
         ${soonBanner}
         <button class="reset-btn" onclick="resetForm()">← Check another member</button>
       </div>`;
@@ -328,6 +335,7 @@ function showResult(data) {
         <p class="result-msg">${lastRenewed}<br><br>
         Your membership has <strong>expired</strong>. Please renew today to enjoy this season's events.<br><br>
         <em>You can also renew at the desk — they can tap to pay for you.</em></p>
+        ${confirmBanner}
         ${patronNote}
         <a href="https://www.zeffy.com/en-US/ticketing/raga-club-of-ct-annual-2026-membership" class="renew-btn" target="_blank">🔗 Click Here to Renew</a>
         <p class="desk-note">Or scan the QR code at the registration desk to renew.</p>
