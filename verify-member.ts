@@ -1,15 +1,16 @@
-// Supabase Edge Function: verify-member  (v4 — 60-day early renewal window + $250 sustainer minimum)
+// Supabase Edge Function: verify-member  (v5 — alias lookup support)
 // File: supabase/functions/verify-member/index.ts
 //
-// Logic:
-//   1. Find sustainer by email (exact) or name (DB ilike)
-//   2. Fetch all payments and calculate correct valid_until
-//      using only qualifying payments (amount >= $250 SUSTAINER_THRESHOLD):
-//      - Within 60 days before expiry: new valid_until = old valid_until + 1 year
-//      - More than 60 days before expiry or after expiry: payment_date + 1 year
-//   3. If DB valid_until is missing or outdated → update it automatically
-//   4. Sum ALL payments in past 12 months → if >= $1000, sustainer is a Patron
-//   5. Return ONLY status info — raw data never leaves the server
+// Lookup order:
+//   1a. Primary email on members table
+//   1b. Primary name on members table
+//   1c. Alias email on member_aliases table
+//   1d. Alias name on member_aliases table
+// Then:
+//   2. Fetch payments — only qualifying (amount >= $250) count toward validity
+//   3. 60-day early renewal window logic for valid_until
+//   4. Patron check: sum all payments in last 12 months >= $1000
+//   5. Return status only — raw data never leaves the server
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -146,7 +147,7 @@ serve(async (req) => {
 
     let member: any = null;
 
-    // 1a. Exact email match
+    // ── 1a. Primary email match ───────────────────────────────
     if (email?.trim()) {
       const { data } = await supabase
         .from("members")
@@ -157,7 +158,7 @@ serve(async (req) => {
       if (data) member = data;
     }
 
-    // 1b. Name match — DB ilike on last name, optional first name fuzzy filter
+    // ── 1b. Primary name match ────────────────────────────────
     let lastNameOnly = false;
     const hasFirst = typeof firstName === "string" && firstName.trim().length > 0;
     const hasLast  = typeof lastName  === "string" && lastName.trim().length > 0;
@@ -192,6 +193,57 @@ serve(async (req) => {
           const payingHits = hits.filter((h: any) => withPayments.has(h.id));
           if (payingHits.length >= 1) {
             member = payingHits[0];
+            lastNameOnly = !hasFirst;
+          }
+        }
+      }
+    }
+
+    // ── 1c. Alias email match (fallback) ──────────────────────
+    if (!member && email?.trim()) {
+      const { data: aliasMatch } = await supabase
+        .from("member_aliases")
+        .select("member_id")
+        .ilike("email", email.trim())
+        .limit(1)
+        .single();
+
+      if (aliasMatch) {
+        const { data } = await supabase
+          .from("members")
+          .select("id, first_name, last_name, valid_until, notes")
+          .eq("id", aliasMatch.member_id)
+          .single();
+        if (data) member = data;
+      }
+    }
+
+    // ── 1d. Alias name match (fallback) ───────────────────────
+    if (!member && hasLast) {
+      const lastTrimmed  = lastName.trim();
+      const firstTrimmed = hasFirst ? firstName.trim() : "";
+
+      const { data: aliasMatches } = await supabase
+        .from("member_aliases")
+        .select("member_id, first_name, last_name")
+        .ilike("last_name", lastTrimmed);
+
+      if (aliasMatches && aliasMatches.length > 0) {
+        const hits = hasFirst
+          ? aliasMatches.filter((a: any) =>
+              fuzzyMatch(firstTrimmed, a.first_name ?? "") ||
+              fuzzyMatch(firstTrimmed, (a.first_name ?? "").split(" ")[0])
+            )
+          : aliasMatches;
+
+        if (hits.length >= 1) {
+          const { data } = await supabase
+            .from("members")
+            .select("id, first_name, last_name, valid_until, notes")
+            .eq("id", hits[0].member_id)
+            .single();
+          if (data) {
+            member = data;
             lastNameOnly = !hasFirst;
           }
         }
