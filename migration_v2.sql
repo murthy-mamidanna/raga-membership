@@ -18,23 +18,26 @@ ALTER TABLE members
 
 
 -- ── Step 2: Updated calculate_valid_until() ───────────────────
--- New rule: only extend from current expiry if payment is within
--- 60 days of expiry. Otherwise treat as fresh: payment_date + 1yr.
+-- New rule: only qualifying payments (amount >= $250) count toward
+-- sustainer validity. Only extend from current expiry if payment
+-- is within 60 days of expiry. Otherwise treat as fresh: payment_date + 1yr.
 CREATE OR REPLACE FUNCTION calculate_valid_until(p_member_id INTEGER)
 RETURNS DATE
 LANGUAGE plpgsql AS $$
 DECLARE
-  v_valid_until DATE := NULL;
-  rec           RECORD;
+  v_valid_until      DATE := NULL;
+  v_sustainer_min    NUMERIC := 250.00;
+  rec                RECORD;
 BEGIN
   FOR rec IN
     SELECT payment_date
     FROM payments
     WHERE member_id = p_member_id
+      AND amount >= v_sustainer_min        -- only qualifying payments
     ORDER BY payment_date ASC
   LOOP
     IF v_valid_until IS NULL THEN
-      -- First payment ever
+      -- First qualifying payment
       v_valid_until := rec.payment_date + INTERVAL '1 year';
 
     ELSIF rec.payment_date >= (v_valid_until - INTERVAL '60 days')
@@ -58,14 +61,16 @@ CREATE OR REPLACE FUNCTION build_renewal_notes(p_member_id INTEGER)
 RETURNS TEXT
 LANGUAGE plpgsql AS $$
 DECLARE
-  v_valid_until DATE := NULL;
-  v_notes       TEXT := '';
-  rec           RECORD;
+  v_valid_until      DATE := NULL;
+  v_sustainer_min    NUMERIC := 250.00;
+  v_notes            TEXT := '';
+  rec                RECORD;
 BEGIN
   FOR rec IN
     SELECT payment_date
     FROM payments
     WHERE member_id = p_member_id
+      AND amount >= v_sustainer_min        -- only qualifying payments
     ORDER BY payment_date ASC
   LOOP
     IF v_valid_until IS NULL THEN
