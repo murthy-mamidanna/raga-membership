@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raga Club — Event Check-in</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --saffron:      #E8850A;
+  --saffron-lt:   #F5A623;
+  --saffron-pale: #FDF3E3;
+  --deep:         #1A0A00;
+  --cream:        #FBF6EE;
+  --green:        #1E7B3A;
+  --green-bg:     #EAF7EE;
+  --red:          #B91C1C;
+  --red-bg:       #FEF2F2;
+  --amber:        #92710A;
+  --amber-bg:     #FFFBEB;
+  --blue:         #1D4ED8;
+  --blue-bg:      #EFF6FF;
+  --text:         #2C1A08;
+  --muted:        #7A5C3A;
+  --border:       rgba(232,133,10,0.2);
+  --surface:      #FFFFFF;
+  --tab-h:        52px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse at 15% 0%, rgba(232,133,10,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 100%, rgba(232,133,10,0.05) 0%, transparent 55%);
+}
+
+/* ── Top bar ── */
+.topbar {
+  background: var(--deep);
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 3px solid var(--saffron);
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-brand img { height: 36px; border-radius: 4px; }
+.topbar-title { font-family: 'Playfair Display', serif; color: var(--saffron-lt); font-size: 1.1rem; font-weight: 600; }
+.topbar-sub { font-size: 0.72rem; color: rgba(245,166,35,0.55); letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Crimson Pro', serif; }
+.event-pill {
+  background: rgba(232,133,10,0.15); border: 1px solid rgba(232,133,10,0.3);
+  border-radius: 20px; padding: 5px 14px; cursor: pointer;
+  color: var(--saffron-lt); font-size: 0.82rem; font-family: 'Crimson Pro', serif;
+  display: flex; align-items: center; gap: 6px; transition: background 0.2s;
+}
+.event-pill:hover { background: rgba(232,133,10,0.25); }
+.event-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.event-pill .dot.none { background: var(--muted); }
+
+/* ── Nav tabs ── */
+.nav {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; position: sticky; top: 0; z-index: 10;
+  box-shadow: 0 2px 8px rgba(139,80,0,0.06);
+}
+.nav-tab {
+  flex: 1; height: var(--tab-h); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 2.5px solid transparent;
+  cursor: pointer; transition: color 0.2s, border-color 0.2s;
+  font-family: 'Crimson Pro', serif; font-weight: 600;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-tab .icon { font-size: 1.1rem; }
+.nav-tab.active { color: var(--saffron); border-bottom-color: var(--saffron); }
+.nav-tab:hover:not(.active) { color: var(--text); }
+
+/* ── Panels ── */
+.panel { display: none; max-width: 600px; margin: 0 auto; padding: 20px 16px 80px; }
+.panel.active { display: block; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 20px;
+  box-shadow: 0 2px 12px rgba(139,80,0,0.06);
+  margin-bottom: 14px;
+}
+.card-title {
+  font-family: 'Playfair Display', serif; font-size: 1.05rem;
+  color: var(--deep); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.card-title .icon { color: var(--saffron); font-size: 0.9rem; }
+
+/* ── Forms ── */
+.field-group { margin-bottom: 13px; }
+.field-label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; font-weight: 600; display: block; }
+.field-input {
+  width: 100%; padding: 10px 13px; border: 1.5px solid var(--border);
+  border-radius: 9px; font-family: 'Crimson Pro', serif; font-size: 1rem;
+  color: var(--text); background: var(--cream); outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field-input:focus { border-color: var(--saffron); box-shadow: 0 0 0 3px rgba(232,133,10,0.12); }
+.field-row { display: flex; gap: 10px; }
+.field-row .field-group { flex: 1; }
+
+/* ── Buttons ── */
+.btn {
+  padding: 10px 18px; border-radius: 9px; font-family: 'Playfair Display', serif;
+  font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none;
+  transition: opacity 0.15s, transform 0.1s; display: inline-flex;
+  align-items: center; gap: 6px;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--saffron); color: white; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-green { background: var(--green); color: white; }
+.btn-green:hover { opacity: 0.9; }
+.btn-outline { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+.btn-outline:hover { border-color: var(--saffron); color: var(--saffron); }
+.btn-red { background: var(--red-bg); color: var(--red); border: 1px solid rgba(185,28,28,0.2); }
+.btn-full { width: 100%; justify-content: center; }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 7px; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 20px; font-size: 0.72rem;
+  font-weight: 600; font-family: 'Crimson Pro', serif; letter-spacing: 0.04em;
+}
+.badge-green  { background: var(--green-bg); color: var(--green); }
+.badge-red    { background: var(--red-bg); color: var(--red); }
+.badge-amber  { background: var(--amber-bg); color: var(--amber); }
+.badge-gold   { background: #FDF3E3; color: #92710A; border: 1px solid rgba(146,113,10,0.3); }
+.badge-blue   { background: var(--blue-bg); color: var(--blue); }
+.badge-gray   { background: #F3F0EA; color: var(--muted); }
+
+/* ── Search result card ── */
+.result-box {
+  border: 2px solid var(--border); border-radius: 12px; padding: 14px 16px;
+  margin-top: 12px; background: var(--surface);
+}
+.result-box.found-active  { border-color: var(--green); }
+.result-box.found-expired { border-color: var(--red); }
+.result-box.found-walkin  { border-color: var(--saffron); }
+.result-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--deep); }
+.result-meta { font-size: 0.85rem; color: var(--muted); margin-top: 3px; font-style: italic; }
+.result-divider { height: 1px; background: var(--border); margin: 10px 0; }
+.result-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+/* ── Roster list ── */
+.roster-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 0; border-bottom: 1px solid var(--border); gap: 10px;
+}
+.roster-item:last-child { border-bottom: none; }
+.roster-name { font-size: 0.95rem; font-weight: 600; color: var(--deep); }
+.roster-sub { font-size: 0.78rem; color: var(--muted); margin-top: 1px; font-family: 'JetBrains Mono', monospace; }
+.roster-right { text-align: right; flex-shrink: 0; }
+
+/* ── Stats strip ── */
+.stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.stat-box { background: var(--cream); border: 1px solid var(--border); border-radius: 10px; padding: 10px; text-align: center; }
+.stat-num { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--deep); }
+.stat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-top: 2px; }
+
+/* ── Event list item ── */
+.event-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px; border: 1px solid var(--border); border-radius: 10px;
+  margin-bottom: 8px; background: var(--surface); cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.event-item:hover { border-color: var(--saffron); box-shadow: 0 2px 8px rgba(232,133,10,0.1); }
+.event-item.selected { border-color: var(--saffron); background: var(--saffron-pale); }
+.event-date-badge { background: var(--saffron); color: white; border-radius: 8px; padding: 4px 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+.event-title-text { font-family: 'Playfair Display', serif; font-size: 0.95rem; color: var(--deep); }
+.event-count { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+/* ── History search ── */
+.history-card {
+  border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+  margin-top: 10px; background: var(--surface);
+}
+.history-event-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+.history-event-row:last-child { border-bottom: none; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--deep); color: var(--saffron-lt); padding: 10px 22px;
+  border-radius: 30px; font-size: 0.88rem; font-family: 'Crimson Pro', serif;
+  border: 1px solid var(--saffron); z-index: 999;
+  transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  white-space: nowrap; pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Modal ── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(26,10,0,0.55);
+  z-index: 100; display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal {
+  background: var(--surface); border-radius: 16px; padding: 24px;
+  max-width: 420px; width: 100%; border: 1px solid var(--border);
+  box-shadow: 0 20px 60px rgba(26,10,0,0.3);
+}
+.modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--deep); margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+
+/* ── Section header ── */
+.section-header { font-family: 'Playfair Display', serif; font-size: 0.85rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+
+/* ── Misc ── */
+.no-event-msg { text-align: center; padding: 40px 20px; color: var(--muted); font-style: italic; }
+.search-hint { font-size: 0.8rem; color: var(--muted); margin-top: 6px; font-style: italic; }
+.checkin-time { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); }
+.separator { height: 1px; background: var(--border); margin: 14px 0; }
+.inline-form { display: flex; gap: 8px; }
+.inline-form .field-input { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ── CONFIG — fill these in ── -->
+<script>
+const SUPABASE_URL     = "https://itxslahgoybmzwcaeqat.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0eHNsYWhnb3libXp3Y2FlcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NjA1MzYsImV4cCI6MjA4ODQzNjUzNn0.fXF_4eRMLLBJwwO8DwoMdM-rlg8JwtwXNeG_xKcd9q0";
+const EDGE_BASE        = `${SUPABASE_URL}/functions/v1`;
+</script>
+
+<!-- ── Top bar ── -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <img src="raga_banner.jpg" alt="Raga Club" onerror="this.style.display='none'" />
+    <div>
+      <div class="topbar-title">Raga Club of Connecticut</div>
+      <div class="topbar-sub">Event Check-in System</div>
+    </div>
+  </div>
+  <div class="event-pill" onclick="showTab('events')">
+    <div class="dot" id="eventDot"></div>
+    <span id="eventPillLabel">Select event</span>
+  </div>
+</div>
+
+<!-- ── Nav ── -->
+<div class="nav">
+  <div class="nav-tab active" onclick="showTab('checkin')" id="tab-checkin">
+    <span class="icon">✦</span>Check-in
+  </div>
+  <div class="nav-tab" onclick="showTab('roster')" id="tab-roster">
+    <span class="icon">◈</span>Roster
+  </div>
+  <div class="nav-tab" onclick="showTab('events')" id="tab-events">
+    <span class="icon">◇</span>Events
+  </div>
+  <div class="nav-tab" onclick="showTab('history')" id="tab-history">
+    <span class="icon">◉</span>History
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB 1 — CHECK-IN
+══════════════════════════════════════════════ -->
+<div class="panel active" id="panel-checkin">
+  <div id="noEventWarning" class="no-event-msg" style="display:none;">
+    <p style="font-size:1.1rem; margin-bottom:8px;">No event selected</p>
+    <p>Go to the <strong>Events</strong> tab to select or create today's event.</p>
+  </div>
+
+  <div id="checkinContent">
+    <!-- Search -->
+    <div class="card">
+      <div class="card-title"><span class="icon">✦</span> Find Sustainer</div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">First Name</label>
+          <input class="field-input" id="ciFirst" placeholder="First..." oninput="clearResult()" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Last Name</label>
+          <input class="field-input" id="ciLast" placeholder="Last..." oninput="clearResult()" />
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Email</label>
+        <input class="field-input" id="ciEmail" type="email" placeholder="email@example.com" oninput="clearResult()" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="searchSustainer()">Search Sustainer</button>
+      <p class="search-hint">Search by name, email, or both. Checks sustainer records and aliases.</p>
+
+      <!-- Result box -->
+      <div id="ciResult" style="display:none;"></div>
+    </div>
+
+    <!-- Walk-in entry -->
+    <div class="card">
+      <div class="card-title"><span class="icon">◈</span> Walk-in Entry ($30)</div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Name</label>
+          <input class="field-input" id="wiName" placeholder="Full name..." />
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Email (optional)</label>
+        <input class="field-input" id="wiEmail" type="email" placeholder="email@example.com" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="recordWalkin()">Record Walk-in Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB 2 — ROSTER
+══════════════════════════════════════════════ -->
+<div class="panel" id="panel-roster">
+  <div id="rosterNoEvent" class="no-event-msg" style="display:none;">
+    <p>Select an event first.</p>
+  </div>
+  <div id="rosterContent">
+    <div class="card">
+      <div class="card-title"><span class="icon">◈</span> <span id="rosterEventTitle">Event Roster</span></div>
+      <div class="stats-strip" id="rosterStats">
+        <div class="stat-box"><div class="stat-num" id="statTotal">—</div><div class="stat-label">Total</div></div>
+        <div class="stat-box"><div class="stat-num" id="statSustainer">—</div><div class="stat-label">Sustainers</div></div>
+        <div class="stat-box"><div class="stat-num" id="statGuest">—</div><div class="stat-label">Guests</div></div>
+        <div class="stat-box"><div class="stat-num" id="statWalkin">—</div><div class="stat-label">Walk-ins</div></div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="loadRoster()" style="margin-bottom:12px;">↻ Refresh</button>
+      <div id="rosterList"><p style="color:var(--muted);font-style:italic;font-size:0.9rem;">Loading...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB 3 — EVENTS
+══════════════════════════════════════════════ -->
+<div class="panel" id="panel-events">
+  <div class="card">
+    <div class="card-title"><span class="icon">◇</span> New Event</div>
+    <div class="field-group">
+      <label class="field-label">Concert Title</label>
+      <input class="field-input" id="evTitle" placeholder="e.g. Vidya Kalyanaraman — Carnatic Vocal" />
+    </div>
+    <div class="field-group">
+      <label class="field-label">Date</label>
+      <input class="field-input" id="evDate" type="date" />
+    </div>
+    <div class="field-group">
+      <label class="field-label">Notes (optional)</label>
+      <input class="field-input" id="evNotes" placeholder="Venue, series, etc." />
+    </div>
+    <button class="btn btn-primary btn-full" onclick="createEvent()">+ Create Event</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="icon">◇</span> All Events</div>
+    <div id="eventsList"><p style="color:var(--muted);font-style:italic;">Loading...</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB 4 — HISTORY
+══════════════════════════════════════════════ -->
+<div class="panel" id="panel-history">
+  <div class="card">
+    <div class="card-title"><span class="icon">◉</span> Sustainer Attendance History</div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">First Name</label>
+        <input class="field-input" id="hiFirst" placeholder="First..." />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Last Name</label>
+        <input class="field-input" id="hiLast" placeholder="Last..." />
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Email</label>
+      <input class="field-input" id="hiEmail" type="email" placeholder="email@example.com" />
+    </div>
+    <button class="btn btn-primary btn-full" onclick="searchHistory()">Search History</button>
+    <div id="historyResult" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="icon">◉</span> All Attendance by Event</div>
+    <div id="allEventsHistory"><p style="color:var(--muted);font-style:italic;">Loading...</p></div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── Guest modal ── -->
+<div class="modal-backdrop" id="guestModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Add Guest</div>
+    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:14px;font-style:italic;">Guest of <strong id="guestOfName"></strong></p>
+    <div class="field-group">
+      <label class="field-label">Guest Name</label>
+      <input class="field-input" id="guestName" placeholder="Full name..." />
+    </div>
+    <div class="field-group">
+      <label class="field-label">Guest Email (optional)</label>
+      <input class="field-input" id="guestEmail" type="email" placeholder="email@example.com" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeGuestModal()" style="flex:1;">Cancel</button>
+      <button class="btn btn-green" onclick="confirmGuest()" style="flex:1;">Check In Guest</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+let currentEvent = null;
+let pendingMember = null;   // sustainer found by search
+
+// ── Supabase REST helpers ──────────────────────────────────────
+async function sbGet(table, params = '') {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function sbPost(table, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function sbPatch(table, params, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ── Toast ──────────────────────────────────────────────────────
+function showToast(msg, duration = 2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── Tab navigation ─────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`panel-${name}`).classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+  if (name === 'roster') loadRoster();
+  if (name === 'events') loadEvents();
+  if (name === 'history') loadAllEventsHistory();
+}
+
+// ── Event management ───────────────────────────────────────────
+function updateEventPill() {
+  const dot = document.getElementById('eventDot');
+  const label = document.getElementById('eventPillLabel');
+  if (currentEvent) {
+    dot.className = 'dot';
+    label.textContent = currentEvent.title.length > 22
+      ? currentEvent.title.slice(0, 22) + '…'
+      : currentEvent.title;
+  } else {
+    dot.className = 'dot none';
+    label.textContent = 'Select event';
+  }
+  const noWarn = document.getElementById('noEventWarning');
+  const ciContent = document.getElementById('checkinContent');
+  const rosterNoEvent = document.getElementById('rosterNoEvent');
+  const rosterContent = document.getElementById('rosterContent');
+  if (currentEvent) {
+    noWarn.style.display = 'none';
+    ciContent.style.display = 'block';
+    rosterNoEvent.style.display = 'none';
+    rosterContent.style.display = 'block';
+  } else {
+    noWarn.style.display = 'block';
+    ciContent.style.display = 'none';
+    rosterNoEvent.style.display = 'block';
+    rosterContent.style.display = 'none';
+  }
+}
+
+async function createEvent() {
+  const title = document.getElementById('evTitle').value.trim();
+  const date  = document.getElementById('evDate').value;
+  const notes = document.getElementById('evNotes').value.trim();
+  if (!title || !date) { showToast('Please enter title and date'); return; }
+  try {
+    const rows = await sbPost('events', { title, event_date: date, notes: notes || null });
+    const ev = rows[0];
+    document.getElementById('evTitle').value = '';
+    document.getElementById('evDate').value = '';
+    document.getElementById('evNotes').value = '';
+    selectEvent(ev);
+    loadEvents();
+    showToast('✦ Event created — now active');
+  } catch(e) {
+    showToast('Error creating event');
+    console.error(e);
+  }
+}
+
+async function loadEvents() {
+  try {
+    const rows = await sbGet('events', '?order=event_date.desc&select=*');
+    const el = document.getElementById('eventsList');
+    if (!rows.length) { el.innerHTML = '<p style="color:var(--muted);font-style:italic;">No events yet.</p>'; return; }
+    const checkinCounts = await loadCheckinCounts();
+    el.innerHTML = rows.map(ev => {
+      const count = checkinCounts[ev.id] || 0;
+      const isSelected = currentEvent && currentEvent.id === ev.id;
+      const d = new Date(ev.event_date + 'T12:00:00Z');
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return `
+        <div class="event-item ${isSelected ? 'selected' : ''}" onclick="selectEvent(${JSON.stringify(ev).replace(/"/g, '&quot;')})">
+          <div>
+            <div class="event-title-text">${ev.title}</div>
+            <div class="event-count">${dateStr} · ${count} attended</div>
+          </div>
+          <div>
+            <span class="event-date-badge">${dateStr}</span>
+            ${isSelected ? '<div style="font-size:0.7rem;color:var(--saffron);text-align:center;margin-top:4px;">Active</div>' : ''}
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function loadCheckinCounts() {
+  try {
+    const rows = await sbGet('checkins', '?select=event_id');
+    const counts = {};
+    rows.forEach(r => { counts[r.event_id] = (counts[r.event_id] || 0) + 1; });
+    return counts;
+  } catch { return {}; }
+}
+
+function selectEvent(ev) {
+  currentEvent = ev;
+  updateEventPill();
+  showTab('checkin');
+  showToast(`✦ Event: ${ev.title}`);
+}
+
+// ── Sustainer search & check-in ────────────────────────────────
+function clearResult() {
+  document.getElementById('ciResult').style.display = 'none';
+  pendingMember = null;
+}
+
+async function searchSustainer() {
+  if (!currentEvent) { showToast('Select an event first'); showTab('events'); return; }
+  const first = document.getElementById('ciFirst').value.trim();
+  const last  = document.getElementById('ciLast').value.trim();
+  const email = document.getElementById('ciEmail').value.trim();
+  if (!first && !last && !email) { showToast('Enter a name or email to search'); return; }
+
+  const el = document.getElementById('ciResult');
+  el.style.display = 'block';
+  el.innerHTML = '<p style="color:var(--muted);font-style:italic;padding:10px 0;">Searching...</p>';
+
+  try {
+    // Call verify-member edge function
+    const res = await fetch(`${EDGE_BASE}/verify-member`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email: email || undefined, firstName: first || undefined, lastName: last || undefined })
+    });
+    const data = await res.json();
+
+    if (data.status === 'not_found' || data.status === 'error') {
+      el.innerHTML = `
+        <div class="result-box found-walkin">
+          <div class="result-name">Not found in sustainer records</div>
+          <div class="result-meta">This person is not a registered sustainer. Use the walk-in section below.</div>
+        </div>`;
+      return;
+    }
+
+    // Found — check if already checked in
+    pendingMember = data;
+    const alreadyIn = await isAlreadyCheckedIn(data.memberId);
+    const active = data.status === 'active';
+
+    el.innerHTML = `
+      <div class="result-box ${active ? 'found-active' : 'found-expired'}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+          <div>
+            <div class="result-name">${data.displayName}</div>
+            <div class="result-meta">${active ? 'Valid through ' + data.expiryDate : 'Expired — last renewed ' + (data.lastRenewal || 'unknown')}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span class="badge ${active ? 'badge-green' : 'badge-red'}">${active ? 'Active' : 'Expired'}</span>
+            ${data.isPatron ? '<span class="badge badge-gold">👑 Patron</span>' : ''}
+          </div>
+        </div>
+        ${data.lastNameOnly ? `<div style="margin-top:8px;padding:7px 10px;background:var(--amber-bg);border-radius:7px;font-size:0.8rem;color:var(--amber);">⚠️ Matched by last name — please confirm identity is <strong>${data.firstName}</strong></div>` : ''}
+        <div class="result-divider"></div>
+        ${alreadyIn
+          ? `<div style="padding:8px 10px;background:var(--green-bg);border-radius:7px;font-size:0.85rem;color:var(--green);"><strong>✓ Already checked in</strong> to this event</div>`
+          : `<div class="result-actions">
+              <button class="btn btn-green btn-sm" onclick="checkInSustainer()" style="flex:1;">
+                ${active ? '✓ Check In (Free)' : '⚠ Check In (Expired)'}
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="openGuestModal('${data.displayName.replace(/'/g,"\\'")}')">
+                + Add Guest
+              </button>
+            </div>`
+        }
+      </div>`;
+  } catch(e) {
+    el.innerHTML = '<div class="result-box"><div class="result-meta">Connection error. Please try again.</div></div>';
+    console.error(e);
+  }
+}
+
+async function isAlreadyCheckedIn(memberId) {
+  if (!memberId || !currentEvent) return false;
+  try {
+    const rows = await sbGet('checkins', `?event_id=eq.${currentEvent.id}&member_id=eq.${memberId}&select=id`);
+    return rows.length > 0;
+  } catch { return false; }
+}
+
+async function checkInSustainer() {
+  if (!pendingMember || !currentEvent) return;
+  try {
+    await sbPost('checkins', {
+      event_id:      currentEvent.id,
+      attendee_type: 'sustainer',
+      member_id:     pendingMember.memberId || null,
+      name:          pendingMember.displayName,
+      email:         pendingMember.email || null,
+      notes:         pendingMember.status === 'expired' ? 'Checked in with expired sustainer status' : null
+    });
+    showToast(`✦ ${pendingMember.displayName} checked in`);
+    clearCheckinForm();
+    loadRoster();
+  } catch(e) {
+    if (e.message && e.message.includes('uq_checkin')) {
+      showToast('Already checked in to this event');
+    } else {
+      showToast('Error — please try again');
+      console.error(e);
+    }
+  }
+}
+
+function clearCheckinForm() {
+  ['ciFirst','ciLast','ciEmail'].forEach(id => document.getElementById(id).value = '');
+  clearResult();
+}
+
+// ── Walk-in ────────────────────────────────────────────────────
+async function recordWalkin() {
+  if (!currentEvent) { showToast('Select an event first'); return; }
+  const name  = document.getElementById('wiName').value.trim();
+  const email = document.getElementById('wiEmail').value.trim();
+  if (!name) { showToast('Please enter the walk-in name'); return; }
+  try {
+    await sbPost('checkins', {
+      event_id:      currentEvent.id,
+      attendee_type: 'walkin',
+      name,
+      email:         email || null,
+      notes:         '$30 walk-in entry'
+    });
+    document.getElementById('wiName').value = '';
+    document.getElementById('wiEmail').value = '';
+    showToast(`✦ Walk-in recorded: ${name}`);
+    loadRoster();
+  } catch(e) {
+    if (e.message && e.message.includes('idx_checkin_walkin_email')) {
+      showToast('This email is already checked in');
+    } else {
+      showToast('Error recording walk-in');
+      console.error(e);
+    }
+  }
+}
+
+// ── Guest modal ────────────────────────────────────────────────
+let guestForMember = null;
+
+function openGuestModal(memberName) {
+  guestForMember = pendingMember;
+  document.getElementById('guestOfName').textContent = memberName;
+  document.getElementById('guestName').value = '';
+  document.getElementById('guestEmail').value = '';
+  document.getElementById('guestModal').style.display = 'flex';
+}
+
+function closeGuestModal() {
+  document.getElementById('guestModal').style.display = 'none';
+  guestForMember = null;
+}
+
+async function confirmGuest() {
+  if (!currentEvent || !guestForMember) return;
+  const name  = document.getElementById('guestName').value.trim();
+  const email = document.getElementById('guestEmail').value.trim();
+  if (!name) { showToast('Please enter guest name'); return; }
+
+  try {
+    // Add to member_aliases if email/name provided and not already there
+    let aliasId = null;
+    if (email || name) {
+      try {
+        const aliasRows = await sbPost('member_aliases', {
+          member_id:  guestForMember.memberId || null,
+          first_name: name.split(' ')[0] || null,
+          last_name:  name.split(' ').slice(1).join(' ') || null,
+          email:      email || null,
+          notes:      `Guest of ${guestForMember.displayName}`
+        });
+        aliasId = aliasRows[0]?.id || null;
+      } catch(aliasErr) {
+        // Alias may already exist — that's fine, continue check-in
+        console.log('Alias already exists or error:', aliasErr.message);
+      }
+    }
+
+    await sbPost('checkins', {
+      event_id:           currentEvent.id,
+      attendee_type:      'guest',
+      member_id:          null,
+      alias_id:           aliasId,
+      guest_of_member_id: guestForMember.memberId || null,
+      name,
+      email:              email || null,
+      notes:              `Guest of ${guestForMember.displayName}`
+    });
+
+    closeGuestModal();
+    showToast(`✦ Guest ${name} checked in`);
+    loadRoster();
+  } catch(e) {
+    showToast('Error recording guest');
+    console.error(e);
+  }
+}
+
+// ── Roster ─────────────────────────────────────────────────────
+async function loadRoster() {
+  if (!currentEvent) return;
+  document.getElementById('rosterEventTitle').textContent = currentEvent.title;
+  try {
+    const rows = await sbGet('checkins',
+      `?event_id=eq.${currentEvent.id}&order=checkin_time.asc&select=*`
+    );
+    const total     = rows.length;
+    const sustainer = rows.filter(r => r.attendee_type === 'sustainer').length;
+    const guest     = rows.filter(r => r.attendee_type === 'guest').length;
+    const walkin    = rows.filter(r => r.attendee_type === 'walkin').length;
+
+    document.getElementById('statTotal').textContent     = total;
+    document.getElementById('statSustainer').textContent = sustainer;
+    document.getElementById('statGuest').textContent     = guest;
+    document.getElementById('statWalkin').textContent    = walkin;
+
+    const el = document.getElementById('rosterList');
+    if (!rows.length) {
+      el.innerHTML = '<p style="color:var(--muted);font-style:italic;font-size:0.9rem;">No check-ins yet for this event.</p>';
+      return;
+    }
+
+    el.innerHTML = rows.map(r => {
+      const time = new Date(r.checkin_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      let badge = '';
+      let sub = time;
+      if (r.attendee_type === 'sustainer') {
+        badge = '<span class="badge badge-green">Sustainer</span>';
+      } else if (r.attendee_type === 'guest') {
+        badge = '<span class="badge badge-amber">Guest</span>';
+        sub += r.notes ? ` · ${r.notes}` : '';
+      } else {
+        badge = '<span class="badge badge-gray">Walk-in</span>';
+      }
+      return `
+        <div class="roster-item">
+          <div>
+            <div class="roster-name">${r.name}</div>
+            <div class="roster-sub">${sub}${r.email ? ' · ' + r.email : ''}</div>
+          </div>
+          <div class="roster-right">${badge}</div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    console.error(e);
+    document.getElementById('rosterList').innerHTML = '<p style="color:var(--red);">Error loading roster.</p>';
+  }
+}
+
+// ── History ────────────────────────────────────────────────────
+async function searchHistory() {
+  const first = document.getElementById('hiFirst').value.trim();
+  const last  = document.getElementById('hiLast').value.trim();
+  const email = document.getElementById('hiEmail').value.trim();
+  if (!first && !last && !email) { showToast('Enter name or email'); return; }
+
+  const el = document.getElementById('historyResult');
+  el.innerHTML = '<p style="color:var(--muted);font-style:italic;">Searching...</p>';
+
+  try {
+    // Use verify-member to find the person
+    const res = await fetch(`${EDGE_BASE}/verify-member`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email || undefined, firstName: first || undefined, lastName: last || undefined })
+    });
+    const data = await res.json();
+
+    if (data.status === 'not_found' || data.status === 'error') {
+      el.innerHTML = '<p style="color:var(--muted);font-style:italic;">No sustainer record found.</p>';
+      return;
+    }
+
+    if (!data.memberId) {
+      el.innerHTML = '<p style="color:var(--muted);font-style:italic;">Found sustainer but no member ID available.</p>';
+      return;
+    }
+
+    // Fetch all check-ins for this member
+    const checkins = await sbGet('checkins',
+      `?member_id=eq.${data.memberId}&order=checkin_time.desc&select=*,events(title,event_date)`
+    );
+
+    el.innerHTML = `
+      <div class="history-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div>
+            <div class="roster-name">${data.displayName}</div>
+            <div class="roster-sub">${checkins.length} event${checkins.length !== 1 ? 's' : ''} attended</div>
+          </div>
+          <span class="badge ${data.status === 'active' ? 'badge-green' : 'badge-red'}">${data.status}</span>
+        </div>
+        <div class="separator"></div>
+        ${checkins.length === 0
+          ? '<p style="color:var(--muted);font-style:italic;font-size:0.85rem;">No event attendance recorded yet.</p>'
+          : checkins.map(c => {
+              const ev = c.events;
+              const d = ev ? new Date(ev.event_date + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+              return `
+                <div class="history-event-row">
+                  <div>
+                    <div style="font-size:0.88rem;font-weight:600;color:var(--deep);">${ev ? ev.title : 'Unknown event'}</div>
+                    <div class="checkin-time">${d}</div>
+                  </div>
+                  <span class="badge badge-green" style="font-size:0.68rem;">✓</span>
+                </div>`;
+            }).join('')
+        }
+      </div>`;
+  } catch(e) {
+    el.innerHTML = '<p style="color:var(--red);">Error searching history.</p>';
+    console.error(e);
+  }
+}
+
+async function loadAllEventsHistory() {
+  try {
+    const events = await sbGet('events', '?order=event_date.desc&select=*');
+    const el = document.getElementById('allEventsHistory');
+    if (!events.length) { el.innerHTML = '<p style="color:var(--muted);font-style:italic;">No events yet.</p>'; return; }
+
+    const allCheckins = await sbGet('checkins', '?select=event_id,attendee_type,name');
+    const byEvent = {};
+    allCheckins.forEach(c => {
+      if (!byEvent[c.event_id]) byEvent[c.event_id] = [];
+      byEvent[c.event_id].push(c);
+    });
+
+    el.innerHTML = events.map(ev => {
+      const rows = byEvent[ev.id] || [];
+      const d = new Date(ev.event_date + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const sustainers = rows.filter(r => r.attendee_type === 'sustainer').length;
+      const walkins = rows.filter(r => r.attendee_type === 'walkin').length;
+      const guests = rows.filter(r => r.attendee_type === 'guest').length;
+      return `
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div>
+              <div style="font-family:'Playfair Display',serif;font-size:0.95rem;color:var(--deep);">${ev.title}</div>
+              <div class="checkin-time">${d}</div>
+            </div>
+            <span class="badge badge-gray">${rows.length} total</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="badge badge-green">${sustainers} sustainer${sustainers !== 1 ? 's' : ''}</span>
+            <span class="badge badge-amber">${guests} guest${guests !== 1 ? 's' : ''}</span>
+            <span class="badge badge-gray">${walkins} walk-in${walkins !== 1 ? 's' : ''}</span>
+          </div>
+        </div>`;
+    }).join('<div class="separator"></div>');
+  } catch(e) { console.error(e); }
+}
+
+// ── Init ───────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const active = document.querySelector('.panel.active');
+    if (active.id === 'panel-checkin') searchSustainer();
+    if (active.id === 'panel-history') searchHistory();
+  }
+});
+
+// Set today's date as default for new event
+document.getElementById('evDate').value = new Date().toISOString().split('T')[0];
+
+updateEventPill();
+loadEvents();
+</script>
+</body>
+</html>
