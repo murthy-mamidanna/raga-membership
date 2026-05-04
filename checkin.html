@@ -357,7 +357,7 @@ const EDGE_BASE        = `${SUPABASE_URL}/functions/v1`;
       <label class="field-label">Notes (optional)</label>
       <input class="field-input" id="evNotes" placeholder="Venue, series, etc." />
     </div>
-    <button class="btn btn-primary btn-full" onclick="createEvent()">+ Create Event</button>
+    <button class="btn btn-primary btn-full" onclick="createNewEvent()">+ Create Event</button>
   </div>
 
   <div class="card">
@@ -516,7 +516,7 @@ function updateEventPill() {
   }
 }
 
-async function createEvent() {
+async function createNewEvent() {
   const title = document.getElementById('evTitle').value.trim();
   const date  = document.getElementById('evDate').value;
   const notes = document.getElementById('evNotes').value.trim();
