@@ -288,9 +288,15 @@ const EDGE_BASE        = `${SUPABASE_URL}/functions/v1`;
           <input class="field-input" id="ciLast" placeholder="Last..." oninput="clearResult()" />
         </div>
       </div>
-      <div class="field-group">
-        <label class="field-label">Email</label>
-        <input class="field-input" id="ciEmail" type="email" placeholder="email@example.com" oninput="clearResult()" />
+      <div class="field-row">
+        <div class="field-group" style="flex:2;">
+          <label class="field-label">Email</label>
+          <input class="field-input" id="ciEmail" type="email" placeholder="email@example.com" oninput="clearResult()" />
+        </div>
+        <div class="field-group" style="flex:1;">
+          <label class="field-label">No. of Persons</label>
+          <input class="field-input" id="ciPersons" type="number" min="1" max="20" value="1" oninput="clearResult()" />
+        </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="searchSustainer()">Search Sustainer</button>
       <p class="search-hint">Search by name, email, or both. Checks sustainer records and aliases.</p>
@@ -301,16 +307,24 @@ const EDGE_BASE        = `${SUPABASE_URL}/functions/v1`;
 
     <!-- Walk-in entry -->
     <div class="card">
-      <div class="card-title"><span class="icon">◈</span> Walk-in Entry ($30)</div>
-      <div class="field-row">
-        <div class="field-group">
-          <label class="field-label">Name</label>
-          <input class="field-input" id="wiName" placeholder="Full name..." />
-        </div>
+      <div class="card-title"><span class="icon">◈</span> Walk-in Entry</div>
+      <div class="field-group">
+        <label class="field-label">Name</label>
+        <input class="field-input" id="wiName" placeholder="Full name..." />
       </div>
       <div class="field-group">
         <label class="field-label">Email (optional)</label>
         <input class="field-input" id="wiEmail" type="email" placeholder="email@example.com" />
+      </div>
+      <div class="field-row" style="align-items:flex-end;">
+        <div class="field-group" style="flex:1;">
+          <label class="field-label">No. of Persons</label>
+          <input class="field-input" id="wiPersons" type="number" min="1" max="20" value="1" oninput="updateWalkinFee()" />
+        </div>
+        <div class="field-group" style="flex:1;">
+          <label class="field-label">Entry Fee</label>
+          <div class="field-input" id="wiFeeDisplay" style="background:#EAF7EE;color:var(--green);font-weight:600;font-size:1.1rem;">$30.00</div>
+        </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="recordWalkin()">Record Walk-in Entry</button>
     </div>
@@ -328,11 +342,12 @@ const EDGE_BASE        = `${SUPABASE_URL}/functions/v1`;
     <div class="card">
       <div class="card-title"><span class="icon">◈</span> <span id="rosterEventTitle">Event Roster</span></div>
       <div class="stats-strip" id="rosterStats">
-        <div class="stat-box"><div class="stat-num" id="statTotal">—</div><div class="stat-label">Total</div></div>
+        <div class="stat-box"><div class="stat-num" id="statTotal">—</div><div class="stat-label">Persons</div></div>
         <div class="stat-box"><div class="stat-num" id="statSustainer">—</div><div class="stat-label">Sustainers</div></div>
         <div class="stat-box"><div class="stat-num" id="statGuest">—</div><div class="stat-label">Guests</div></div>
         <div class="stat-box"><div class="stat-num" id="statWalkin">—</div><div class="stat-label">Walk-ins</div></div>
       </div>
+      <div id="feeTotal" style="display:none;padding:8px 12px;background:var(--green-bg);border-radius:8px;font-size:0.88rem;color:var(--green);margin-bottom:10px;font-weight:600;"></div>
       <button class="btn btn-outline btn-sm" onclick="loadRoster()" style="margin-bottom:12px;">↻ Refresh</button>
       <div id="rosterList"><p style="color:var(--muted);font-style:italic;font-size:0.9rem;">Loading...</p></div>
     </div>
@@ -638,7 +653,7 @@ async function searchSustainer() {
         ${alreadyIn
           ? `<div style="padding:8px 10px;background:var(--green-bg);border-radius:7px;font-size:0.85rem;color:var(--green);"><strong>✓ Already checked in</strong> to this event</div>`
           : `<div class="result-actions">
-              <button class="btn btn-green btn-sm" onclick="checkInSustainer()" style="flex:1;">
+              <button class="btn btn-green btn-sm" onclick="checkInSustainer()" style="flex:1;" id="ciBtn">
                 ${active ? '✓ Check In (Free)' : '⚠ Check In (Expired)'}
               </button>
               <button class="btn btn-outline btn-sm" onclick="openGuestModal('${data.displayName.replace(/'/g,"\\'")}')">
@@ -663,6 +678,7 @@ async function isAlreadyCheckedIn(memberId) {
 
 async function checkInSustainer() {
   if (!pendingMember || !currentEvent) return;
+  const numPersons = parseInt(document.getElementById('ciPersons').value) || 1;
   try {
     await sbPost('checkins', {
       event_id:      currentEvent.id,
@@ -670,9 +686,15 @@ async function checkInSustainer() {
       member_id:     pendingMember.memberId || null,
       name:          pendingMember.displayName,
       email:         pendingMember.email || null,
-      notes:         pendingMember.status === 'expired' ? 'Checked in with expired sustainer status' : null
+      num_persons:   numPersons,
+      entry_fee:     0,
+      notes:         [
+        numPersons > 1 ? `${numPersons} persons` : null,
+        pendingMember.status === 'expired' ? 'Checked in with expired sustainer status' : null
+      ].filter(Boolean).join('; ') || null
     });
-    showToast(`✦ ${pendingMember.displayName} checked in`);
+    const personLabel = numPersons > 1 ? ` (${numPersons} persons)` : '';
+    showToast(`✦ ${pendingMember.displayName} checked in${personLabel}`);
     clearCheckinForm();
     loadRoster();
   } catch(e) {
@@ -687,14 +709,25 @@ async function checkInSustainer() {
 
 function clearCheckinForm() {
   ['ciFirst','ciLast','ciEmail'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ciPersons').value = 1;
   clearResult();
 }
 
 // ── Walk-in ────────────────────────────────────────────────────
+const WALKIN_FEE_PER_PERSON = 30;
+
+function updateWalkinFee() {
+  const n = parseInt(document.getElementById('wiPersons').value) || 1;
+  const fee = n * WALKIN_FEE_PER_PERSON;
+  document.getElementById('wiFeeDisplay').textContent = `$${fee.toFixed(2)}`;
+}
+
 async function recordWalkin() {
   if (!currentEvent) { showToast('Select an event first'); return; }
-  const name  = document.getElementById('wiName').value.trim();
-  const email = document.getElementById('wiEmail').value.trim();
+  const name       = document.getElementById('wiName').value.trim();
+  const email      = document.getElementById('wiEmail').value.trim();
+  const numPersons = parseInt(document.getElementById('wiPersons').value) || 1;
+  const entryFee   = numPersons * WALKIN_FEE_PER_PERSON;
   if (!name) { showToast('Please enter the walk-in name'); return; }
   try {
     await sbPost('checkins', {
@@ -702,11 +735,16 @@ async function recordWalkin() {
       attendee_type: 'walkin',
       name,
       email:         email || null,
-      notes:         '$30 walk-in entry'
+      num_persons:   numPersons,
+      entry_fee:     entryFee,
+      notes:         `$${entryFee.toFixed(2)} walk-in entry (${numPersons} person${numPersons > 1 ? 's' : ''})`
     });
     document.getElementById('wiName').value = '';
     document.getElementById('wiEmail').value = '';
-    showToast(`✦ Walk-in recorded: ${name}`);
+    document.getElementById('wiPersons').value = 1;
+    updateWalkinFee();
+    const personLabel = numPersons > 1 ? ` — ${numPersons} persons` : '';
+    showToast(`✦ Walk-in: ${name}${personLabel} · $${entryFee.toFixed(2)}`);
     loadRoster();
   } catch(e) {
     if (e.message && e.message.includes('idx_checkin_walkin_email')) {
@@ -787,15 +825,24 @@ async function loadRoster() {
     const rows = await sbGet('checkins',
       `?event_id=eq.${currentEvent.id}&order=checkin_time.asc&select=*`
     );
-    const total     = rows.length;
-    const sustainer = rows.filter(r => r.attendee_type === 'sustainer').length;
-    const guest     = rows.filter(r => r.attendee_type === 'guest').length;
-    const walkin    = rows.filter(r => r.attendee_type === 'walkin').length;
+    const total     = rows.reduce((s, r) => s + (r.num_persons || 1), 0);
+    const sustainer = rows.filter(r => r.attendee_type === 'sustainer').reduce((s, r) => s + (r.num_persons || 1), 0);
+    const guest     = rows.filter(r => r.attendee_type === 'guest').reduce((s, r) => s + (r.num_persons || 1), 0);
+    const walkin    = rows.filter(r => r.attendee_type === 'walkin').reduce((s, r) => s + (r.num_persons || 1), 0);
+    const totalFee  = rows.filter(r => r.attendee_type === 'walkin').reduce((s, r) => s + (parseFloat(r.entry_fee) || 0), 0);
 
     document.getElementById('statTotal').textContent     = total;
     document.getElementById('statSustainer').textContent = sustainer;
     document.getElementById('statGuest').textContent     = guest;
     document.getElementById('statWalkin').textContent    = walkin;
+
+    const feeEl = document.getElementById('feeTotal');
+    if (totalFee > 0) {
+      feeEl.style.display = 'block';
+      feeEl.textContent = `Walk-in fees collected: $${totalFee.toFixed(2)}`;
+    } else {
+      feeEl.style.display = 'none';
+    }
 
     const el = document.getElementById('rosterList');
     if (!rows.length) {
@@ -805,15 +852,19 @@ async function loadRoster() {
 
     el.innerHTML = rows.map(r => {
       const time = new Date(r.checkin_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      const persons = r.num_persons > 1 ? ` · ${r.num_persons} persons` : '';
       let badge = '';
       let sub = time;
       if (r.attendee_type === 'sustainer') {
         badge = '<span class="badge badge-green">Sustainer</span>';
+        sub += persons;
       } else if (r.attendee_type === 'guest') {
         badge = '<span class="badge badge-amber">Guest</span>';
         sub += r.notes ? ` · ${r.notes}` : '';
       } else {
         badge = '<span class="badge badge-gray">Walk-in</span>';
+        sub += persons;
+        if (r.entry_fee) sub += ` · $${parseFloat(r.entry_fee).toFixed(2)}`;
       }
       return `
         <div class="roster-item">
